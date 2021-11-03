@@ -2,8 +2,7 @@ import abc
 import random
 
 from .utils import (
-    generate_token,
-    get_id
+    generate_token
 )
 
 from .decorators import (
@@ -11,13 +10,21 @@ from .decorators import (
     check_token
 )
 
+from .models import (
+    Session,
+    User
+)
+
+from mongoengine import (
+    ValidationError,
+    DoesNotExist
+)
+
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from jinja2 import Environment, FileSystemLoader
 import smtplib
 import os
-
-LENGTH_TOKEN = 32
 
 class BaseMethodsAPI(abc.ABC):
     def _emailt(self, email, code):
@@ -43,93 +50,83 @@ class BaseMethodsAPI(abc.ABC):
     def sendCode(self, **args):
         email = args['email']
 
-        session = {
-            '_id' : get_id(self.db, 'sessions'),
-            'id_user' : None,
-            'email' : email,
-            'code' : random.randint(100000, 999999),
-            'token' : generate_token(LENGTH_TOKEN),
-            'is_authorized' : False
-        }
+        try:
+            session = Session(
+                email=email,
+                code=random.randint(100000, 999999),
+                token=generate_token(),
+                is_authorized=False
+            )
 
-        self.db.sessions.insert_one(session)
-        self._emailt(email, session['code'])
+            session.save()
+            self._emailt(email, session.code)
 
-        return {'ok' : True, 'session_token' : session['token']}
+            return {'ok' : True, 'session_token' : session.token}
+        except ValidationError:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid email'}
 
     @required_args(['session_token', 'code', 'name'])
     @check_token()
     def register(self, **args):
-        session_token = args['session_token']
+        session = Session.objects.get(token=args['session_token'])
 
-        session = self.db.sessions.find_one({'token' : session_token})
-        user = self.db.users.find_one({'email' : session['email']})
+        try:
+            user = User.objects.get(email=session.email)
+            return {'ok' : False, 'error_code' : 400, 'description' : 'You are already registered'}
+        except DoesNotExist:
+            pass
 
-        if str(session['code']) != args['code']:
-            return {'ok' : False, 'description' : 'Incorrect code'}
-        elif session['is_authorized']:
-            return {'ok' : False, 'description' : 'The session is already authorized'}
-        elif user is not None:
-            return {'ok' : False, 'description' : 'You are already registered'}
-        
-        user = {
-            '_id' : get_id(self.db, 'users'),
-            'email' : session['email'],
-            'name' : args['name'],
-            'surname' : args.get('surname'),
-            'description' : args.get('description'),
-            'contacts' : [],
-            'groups' : []
-        }
+        if session.is_authorized:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'The session is already authorized'}
+        elif str(session.code) != args['code']:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Incorrect code'}
 
-        self.db.users.insert_one(user)
-        self.db.sessions.update_one(
-            {
-                'token' : session_token
-            },
-            {
-                '$set' : {
-                    'is_authorized' : True,
-                    'id_user' : user['_id']
-                }
-            }
+        user = User(
+            email=session.email,
+            name=args['name'],
+            surname=args.get('surname'),
+            description=args.get('description'),
         )
+
+        session.is_authorized = True
+        session.code = None
+        session.id_user = user.id
+
+        try:
+            user.save()
+            session.save()
+        except ValidationError:
+            return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}
 
         return {'ok' : True, 'description' : 'Are you registered'}
 
     @required_args(['session_token', 'code'])
     @check_token()
     def login(self, **args):
-        session_token = args['session_token']
+        session = Session.objects.get(token=args['session_token'])
 
-        session = self.db.sessions.find_one({'token' : session_token})
-        user = self.db.users.find_one({'email' : session['email']})
+        try:
+            user = User.objects.get(email=session.email)
+        except DoesNotExist:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not registred'}
 
-        if str(session['code']) != args['code']:
-            return {'ok' : False, 'description' : 'Incorrect code'}
-        elif session['is_authorized']:
-            return {'ok' : False, 'description' : 'The session is already authorized'}
-        elif user is None:
-            return {'ok' : False, 'description' : 'You are not registred'}
-        
-        self.db.sessions.update(
-            {
-                'token' : session_token
-            },
-            {
-                '$set' : {
-                    'is_authorized' : True,
-                    'id_user' : user['_id']
-                }
-            }
-        )
+        if str(session.code) != args['code']:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Incorrect code'}
+        elif session.is_authorized:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'The session is already authorized'}
+
+        session.is_authorized = True
+        session.code = None
+        session.id_user = user.id
+
+        session.save()
 
         return {'ok' : True, 'description' : 'You are logged in'}
 
     @required_args(['session_token'])
     @check_token(is_auth=True)
     def logOut(self, **args):
-        self.db.sessions.delete_one({'token' : args['session_token']})
+        Session.objects.get(token=args['session_token']).delete()
 
         return {'ok' : True}
 

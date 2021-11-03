@@ -1,12 +1,14 @@
 from . import (
     BaseMethodsAPI,
-    ProfileMethodsAPI
+    ProfileMethodsAPI,
+    GroupsMethodsAPI,
+    MessagesMethodsAPI
 )
 
-import pymongo
+from mongoengine import connect
 import inspect
 
-class API(BaseMethodsAPI, ProfileMethodsAPI):
+class API(BaseMethodsAPI, ProfileMethodsAPI, GroupsMethodsAPI, MessagesMethodsAPI):
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         instance.methods = {i[0] : i[1] for i in inspect.getmembers(instance, predicate=inspect.ismethod) if not i[0].startswith('_')}
@@ -14,10 +16,5 @@ class API(BaseMethodsAPI, ProfileMethodsAPI):
         return instance
 
     def __init__(self, mongodb, smtp):
-        self.client = pymongo.MongoClient(
-            host=mongodb['host'],
-            port=mongodb['port'],
-        )
-
-        self.db = self.client[mongodb['database']]
+        connect(mongodb['database'], host=mongodb['host'], port=mongodb['port'])
         self.smtp = smtp

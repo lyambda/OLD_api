@@ -1,8 +1,8 @@
 import random
 import string
 
-def generate_token(length):
-    return ''.join(random.sample(string.ascii_letters + string.digits, length))
+def generate_token():
+    return ''.join(random.sample(string.ascii_letters + string.digits, 32))
 
 def get_id(db, name):
     collection = db.ids

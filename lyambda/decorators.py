@@ -1,3 +1,6 @@
+from .models import Session
+from mongoengine import DoesNotExist
+
 def required_args(req_args):
     def decorator(func):
         def wrapper(self, *args, **kwargs):
@@ -14,13 +17,13 @@ def required_args(req_args):
 def check_token(is_auth=False):
     def decorator(func):
         def wrapper(self, *args, **kwargs):
-            session = self.db.sessions.find_one({'token' : kwargs['session_token']})
+            try:
+                session = Session.objects.get(token=kwargs['session_token'])
 
-            if session is None:
-                return {'ok' : False, 'description' : 'Session not found'}
-
-            if not session['is_authorized'] and is_auth:
-                return {'ok' : False, 'description' : 'Session is not authorized'}
+                if is_auth and not session.is_authorized:
+                    return {'ok' : False, 'error_code' : 401, 'description' : 'Session is not authorized'}
+            except DoesNotExist:
+                return {'ok' : False, 'error_code' : 400, 'description' : 'Session not found'}
 
             return func(self, *args, **kwargs)
 
