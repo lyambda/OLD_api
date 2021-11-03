@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from lyambda import API
 from config import Config
+import os
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -24,6 +25,6 @@ def internal_server_error(e):
 if __name__ == '__main__':
     app.run(
         host=Config['server']['host'],
-        port=Config['server']['port'],
+        port=int(os.environ.get('PORT', False)) or Config['server']['port'],
         debug=Config['server']['debug']
     )
