@@ -17,10 +17,10 @@ from mongoengine import (
 )
 
 class GroupsMethodsAPI(abc.ABC):
-    @required_args(['session_token', 'name'])
+    @required_args(['token', 'name'])
     @check_token(is_auth=True)
     def createGroup(self, **args):
-        id_user = Session.objects.get(token=args['session_token']).id_user
+        id_user = Session.objects.get(token=args['token']).id_user
         user = User.objects.get(id=id_user)
 
         group = Group(
@@ -41,13 +41,13 @@ class GroupsMethodsAPI(abc.ABC):
 
         return {'ok' : True, 'result' : group.to_mongo().to_dict()}
 
-    @required_args(['session_token', 'id_group'])
+    @required_args(['token', 'id_group'])
     @check_token(is_auth=True)
     def joinGroup(self, **args):
         if not args['id_group'].isdigit():
             return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid group id'}
 
-        id_user = Session.objects.get(token=args['session_token']).id_user
+        id_user = Session.objects.get(token=args['token']).id_user
         user = User.objects.get(id=id_user)
 
         try:

@@ -24,6 +24,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from jinja2 import Environment, FileSystemLoader
 import smtplib
+import datetime
 import os
 
 class BaseMethodsAPI(abc.ABC):
@@ -46,40 +47,69 @@ class BaseMethodsAPI(abc.ABC):
         server.sendmail(message['From'], message['To'], message.as_string())
         server.quit()
 
-    @required_args(['email'])
-    def sendCode(self, **args):
-        email = args['email']
-
+    def _delete_not_auth_sesion(self, email):
         try:
-            session = Session(
-                email=email,
-                code=random.randint(100000, 999999),
-                token=generate_token(),
-                is_authorized=False
-            )
-
-            session.save()
-            self._emailt(email, session.code)
-
-            return {'ok' : True, 'session_token' : session.token}
-        except ValidationError:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid email'}
-
-    @required_args(['session_token', 'code', 'name'])
-    @check_token()
-    def register(self, **args):
-        session = Session.objects.get(token=args['session_token'])
-
-        try:
-            user = User.objects.get(email=session.email)
-            return {'ok' : False, 'error_code' : 400, 'description' : 'You are already registered'}
+            session = Session.objects.get(email=email, is_auth=False)
+            session.delete()
         except DoesNotExist:
             pass
 
-        if session.is_authorized:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'The session is already authorized'}
-        elif str(session.code) != args['code']:
+    @required_args(['email'])
+    def sendCode(self, **args):
+        try:
+            self._delete_not_auth_sesion(args['email'])
+
+            session = Session(
+                email=args['email'],
+                code=random.randint(100000, 999999),
+                token=generate_token(),
+                is_auth=False
+            )
+
+            session.save()
+            self._emailt(args['email'], session.code)
+
+            return {'ok' : True}
+        except ValidationError:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid email'}
+
+    @required_args(['email', 'code'])
+    def signIn(self, **args):
+        try:
+            session = Session.objects.get(email=args['email'], is_auth=False)
+        except DoesNotExist:
+            return {'ok' : False, 'error_code' : 404, 'description' : 'No login required'}
+
+        time_wait = datetime.datetime.utcnow() - session.date
+
+        if time_wait.seconds >= 60 * 5 or session.is_auth:
+            return {'ok' : False, 'error_code' : 410, 'description' : 'The waiting time has expired'}
+
+        if str(session.code) != args['code']:
             return {'ok' : False, 'error_code' : 400, 'description' : 'Incorrect code'}
+
+        try:
+            user = User.objects.get(email=session.email)
+
+            session.is_auth = True
+            session.id_user = user.id
+            session.save()
+
+            return {'ok' : True, 'is_auth' : True, 'description' : 'You are logged in', 'token' : session.token}
+        except DoesNotExist:
+            return {'ok' : True, 'is_auth' : False, 'description' : 'Register now', 'token' : session.token}
+
+    @required_args(['token', 'name'])
+    @check_token()
+    def register(self, **args):
+        session = Session.objects.get(token=args['token'])
+        time_wait = datetime.datetime.utcnow() - session.date
+
+        if session.is_auth:
+            return {'ok' : False, 'error_code' : 410, 'description' : 'You are already registered'}
+
+        if time_wait.seconds >= 60 * 5:
+            return {'ok' : False, 'error_code' : 400, 'description' : 'The waiting time has expired'}
 
         user = User(
             email=session.email,
@@ -88,8 +118,7 @@ class BaseMethodsAPI(abc.ABC):
             description=args.get('description'),
         )
 
-        session.is_authorized = True
-        session.code = None
+        session.is_auth = True
         session.id_user = user.id
 
         try:
@@ -100,33 +129,10 @@ class BaseMethodsAPI(abc.ABC):
 
         return {'ok' : True, 'description' : 'Are you registered'}
 
-    @required_args(['session_token', 'code'])
-    @check_token()
-    def login(self, **args):
-        session = Session.objects.get(token=args['session_token'])
-
-        try:
-            user = User.objects.get(email=session.email)
-        except DoesNotExist:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not registred'}
-
-        if str(session.code) != args['code']:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'Incorrect code'}
-        elif session.is_authorized:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'The session is already authorized'}
-
-        session.is_authorized = True
-        session.code = None
-        session.id_user = user.id
-
-        session.save()
-
-        return {'ok' : True, 'description' : 'You are logged in'}
-
-    @required_args(['session_token'])
+    @required_args(['token'])
     @check_token(is_auth=True)
     def logOut(self, **args):
-        Session.objects.get(token=args['session_token']).delete()
+        Session.objects.get(token=args['token']).delete()
 
         return {'ok' : True}
 

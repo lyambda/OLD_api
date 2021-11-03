@@ -17,10 +17,11 @@ import datetime
 class Session(Document):
     id = SequenceField(collection_name='ids', sequence_name='sessions', primary_key=True)
     id_user = IntField(min_value=1, null=True)
-    email = EmailField(required=True)
+    email = EmailField(required=True, unique=True)
     code = IntField(min_value=100000, max_value=999999, required=True)
-    token = StringField(min_length=32, max_length=32, required=True)
-    is_authorized = BooleanField(required=True)
+    token = StringField(min_length=32, max_length=32, unique=True, required=True)
+    is_auth = BooleanField(required=True)
+    date = DateTimeField(default=datetime.datetime.utcnow)
 
     meta = {
         'collection': 'sessions'

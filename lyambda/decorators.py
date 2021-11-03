@@ -18,9 +18,9 @@ def check_token(is_auth=False):
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             try:
-                session = Session.objects.get(token=kwargs['session_token'])
+                session = Session.objects.get(token=kwargs['token'])
 
-                if is_auth and not session.is_authorized:
+                if is_auth and not session.is_auth:
                     return {'ok' : False, 'error_code' : 401, 'description' : 'Session is not authorized'}
             except DoesNotExist:
                 return {'ok' : False, 'error_code' : 400, 'description' : 'Session not found'}

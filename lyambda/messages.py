@@ -17,11 +17,10 @@ from mongoengine import (
 )
 
 class MessagesMethodsAPI(abc.ABC):
-    @required_args(['session_token', 'id_group', 'text'])
+    @required_args(['token', 'id_group', 'text'])
     @check_token(is_auth=True)
     def sendMessage(self, **args):
-        
-        id_user = Session.objects.get(token=args['session_token']).id_user
+        id_user = Session.objects.get(token=args['token']).id_user
 
         try:
             group = Group.objects.get(id=int(args['id_group']))
@@ -45,10 +44,10 @@ class MessagesMethodsAPI(abc.ABC):
 
         return {'ok' : True, 'result' : message.to_mongo().to_dict()}
 
-    @required_args(['session_token', 'id_group'])
+    @required_args(['token', 'id_group'])
     @check_token(is_auth=True)
     def getMessages(self, **args):
-        id_user = Session.objects.get(token=args['session_token']).id_user
+        id_user = Session.objects.get(token=args['token']).id_user
 
         try:
             group = Group.objects.get(id=int(args['id_group']))
