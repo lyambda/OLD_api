@@ -16,5 +16,6 @@ class API(BaseMethodsAPI, ProfileMethodsAPI, GroupsMethodsAPI, MessagesMethodsAP
         return instance
 
     def __init__(self, mongodb, smtp):
-        connect(mongodb['database'], host=mongodb['host'], port=mongodb['port'])
+        connect(host=mongodb)
+
         self.smtp = smtp
