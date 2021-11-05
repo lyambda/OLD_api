@@ -20,10 +20,16 @@ class ProfileMethodsAPI(abc.ABC):
     @required_args(['token'], types={'token' : str})
     @check_token(is_auth=True)
     def me(self, **args):
-        id_user = Session.objects.get(token=args['token']).id_user
-        user = User.objects.get(id=id_user)
+        user = User.objects.get(id=Session.objects.get(token=args['token']).id_user)
         
         return {'ok' : True, 'result' : user.to_mongo().to_dict()}
+
+    @required_args(['token'], types={'token' : str})
+    @check_token(is_auth=True)
+    def getGroups(self, **args):
+        user = User.objects.get(id=Session.objects.get(token=args['token']).id_user)
+        
+        return {'ok' : True, 'result' : user.groups}
 
     @required_args(['token', 'id'], types={'token' : str, 'id' : int})
     @check_token(is_auth=True)
