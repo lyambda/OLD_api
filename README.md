@@ -6,7 +6,7 @@
   + **Обновленны старые методы**
 
 ### BaseMethodsAPI
-### 1. sendCode
+### 1. sendCode - POST
   + **Отправляет код на почту**
   + **Параметры:**
     + **email** - почта куда отправить
@@ -19,7 +19,7 @@
   + **Ошибки:**
     + Invalid email
 
-### 2. signIn
+### 2. signIn - POST
   + **Авторизация**
   + **Параметры:**
     + **email** - почта
@@ -47,7 +47,7 @@
     + Incorrect code
     + Invalid parameters
 
-### 3. register
+### 3. register - POST
   + **Регистрация в аккаунт**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -68,7 +68,7 @@
     + The waiting time has expired
     + Invalid parameters
 
-### 4. logOut
+### 4. logOut - POST
   + **Выход из аккаунта**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -84,7 +84,7 @@
 
 ## ProfileMethodsAPI
 
-### 1. me
+### 1. me - POST
   + **Информация об аккаунте**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -107,7 +107,7 @@
     + Session is not authorized
     + Session not found
 
-### 2. getGroups
+### 2. getGroups - POST
   + **Группы**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -125,7 +125,7 @@
     + Session is not authorized
     + Session not found
 
-### 3. editName
+### 3. editName - POST
   + **Редактировать имя**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -141,7 +141,7 @@
     + Session not found
     + Invalid parameters
 
-### 4. editSurname
+### 4. editSurname - POST
   + **Редактировать фамилию**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -156,7 +156,7 @@
     + Session is not authorized
     + Session not found
 
-### 5. editDescription
+### 5. editDescription - POST
   + **Редактировать описание**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -171,7 +171,7 @@
     + Session is not authorized
     + Session not found
 
-### 6. addContact
+### 6. addContact - POST
   + **Добавить контакт**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -188,7 +188,7 @@
     + User not found
     + Contact has already been added
 
-### 7. deleteContact
+### 7. deleteContact - POST
   + **Удалить контакт**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -204,7 +204,7 @@
     + Session not found
     + Contact not found
 
-### 8. getUser
+### 8. getUser - POST
   + **Получить пользователя**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -226,7 +226,7 @@
     + Session not found
     + User not found
 
-### 9. getChat
+### 9. getChat - POST
   + **Получить чат**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -257,7 +257,7 @@
 
 ## GroupsMethodsAPI
 
-### 1. createGroup
+### 1. createGroup - POST
   + **Создать группу**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -288,7 +288,7 @@
     + Session not found
     + Invalid parameters
 
-### 2. joinGroup
+### 2. joinGroup - POST
   + **Войти в группу**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -318,7 +318,7 @@
     + Private group
     + You are already in a group
 
-### 3. leaveGroup
+### 3. leaveGroup - POST
   + **Выйти из группы**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -337,7 +337,7 @@
     + Private group
     + You are already in a group
 
-### 4. deleteGroup
+### 4. deleteGroup - POST
   + **Удалть группу**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -359,7 +359,7 @@
 
 ### MessagesMethodsAPI
 
-### 1. sendMessage
+### 1. sendMessage - POST
   + **Отправить сообщение в чат**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -385,7 +385,7 @@
     + You are not in this group
     + Invalid parameters
 
-### 2. getMessages
+### 2. getMessages - POST
   + **Получить список сообщений чата**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -414,7 +414,7 @@
     + You are not in this group
     + Invalid parameters
 
-### 3. deleteMessage
+### 3. deleteMessage - POST
   + **Удалить сообщение в чате**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
