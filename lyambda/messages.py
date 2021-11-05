@@ -8,6 +8,7 @@ from .decorators import (
 from .models import (
     Session,
     Message,
+    User
 )
 
 from mongoengine import (
@@ -22,27 +23,31 @@ class MessagesMethodsAPI(abc.ABC):
     @check_token(is_auth=True)
     def sendMessage(self, **args):
         chat = int(args['chat'])
-        id_user = Session.objects.get(token=args['token']).id_user
-        group = Utilities.get_group(chat, id_user, create_dialog=True)
+        user = User.objects.get(id=Session.objects.get(token=args['token']).id_user)
+        group = Utilities.get_group(chat, user.id, create_dialog=True)
 
         if group is None:
             return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}
 
-        if id_user not in group.participants:
+        if user.id not in group.participants:
             if group.is_private:
                 return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
 
             return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}
 
+        if chat not in user.groups:
+            user.groups.append(chat)
+
         message = Message(
             id_group=group.id,
-            from_id=id_user,
+            from_id=user.id,
             text=args['text']
         )
 
         try:
             message.save()
             group.save()
+            user.save()
         except ValidationError:
             return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}
 

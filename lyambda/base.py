@@ -87,6 +87,8 @@ class BaseMethodsAPI(abc.ABC):
             description=args.get('description'),
         )
 
+        user.groups = [user.id]
+
         favorites = Group(
             name='Избранное',
             admins=[user.id],

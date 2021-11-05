@@ -97,7 +97,7 @@ class GroupsMethodsAPI(abc.ABC):
     @check_token(is_auth=True)
     def deleteGroup(self, **args):
         id_group = int(args['id_group'])
-        id_user = Session.objects.get(token=args['token']).id_user
+        user = User.objects.get(id=Session.objects.get(token=args['token']).id_user)
 
         try:
             group = Group.objects.get(id=id_group)
@@ -107,12 +107,15 @@ class GroupsMethodsAPI(abc.ABC):
         if group.is_private:
             return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
 
-        if id_user not in group.participants:
+        if user.id not in group.participants:
             return {'ok' : False, 'error_code' : 400, 'description' : 'You are not in a group'}
 
         if group not in group.admins:
             return {'ok' : False, 'error_code' : 403, 'description' : 'You have no right'}
 
+        user.groups.remove(group.id)
+        
         group.delete()
+        user.save()
 
         return {'ok' : True}
