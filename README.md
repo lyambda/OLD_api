@@ -1,5 +1,10 @@
 ## API
 
+### Последние изменения
+  + **Добавлены личные сообщения**
+  + **Добавлены новые методы настройки**
+  + **Обновленны старые методы**
+
 ### BaseMethodsAPI
 ### 1. sendCode
   + **Отправляет код на почту**
@@ -40,6 +45,7 @@
     + No login required
     + The waiting time has expired
     + Incorrect code
+    + Invalid parameters
 
 ### 3. register
   + **Регистрация в аккаунт**
@@ -101,6 +107,136 @@
     + Session is not authorized
     + Session not found
 
+### 2. editName
+  + **Редактировать имя**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **name** - новое имя (16 символов)
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + Invalid parameters
+
+### 3. editSurname
+  + **Редактировать фамилию**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **surname** - новая фамилия (может быть пустой) (16 символов)
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+
+### 4. editDescription
+  + **Редактировать описание**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **description** - новое описание (может быть пустой) (16 символов)
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+
+### 5. addContact
+  + **Добавить контакт**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **id** - индентификатор пользователя
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + User not found
+    + Contact has already been added
+
+### 6. deleteContact
+  + **Удалить контакт**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **id** - индентификатор пользователя
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + Contact not found
+
+### 7. getUser
+  + **Получить пользователя**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **id** - индентификатор пользователя
+  + **Ответы:**
+    ```
+    {
+        "ok": true, 
+        "result": {
+            "_id": 2, 
+            "description": null, 
+            "name": "Кирилл", 
+            "surname": null
+        }
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + User not found
+
+### 8. getChat
+  + **Получить чат**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **id** - индентификатор пользователя
+  + **Ответы:**
+    ```
+    {
+        "ok": true, 
+        "result": {
+            "_id": -1, 
+            "admins": [
+                1
+            ], 
+            "description": null, 
+            "is_private": true, 
+            "link": null, 
+            "name": "Избранное", 
+            "participants": [
+                1
+            ]
+        }
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + User not found
+
 ## GroupsMethodsAPI
 
 ### 1. createGroup
@@ -113,16 +249,18 @@
   + **Ответы:**
     ```
     {
-        "ok": true,
+        "ok": true, 
         "result": {
-            "_id": 1,
-            "description": null,
-            "link": null,
-            "messages": [],
-            "name": "Чат",
-            "owner": 1,
+            "_id": -4, 
+            "admins": [
+                1
+            ], 
+            "description": null, 
+            "is_private": false, 
+            "link": null, 
+            "name": "Чат", 
             "participants": [
-              1
+                1
             ]
         }
     }
@@ -157,26 +295,66 @@
   + **Ошибки:**
     + Session is not authorized
     + Session not found
-    + Invalid group id
+    + Invalid parameters
     + Group not found
+    + Private group
     + You are already in a group
+
+### 3. leaveGroup
+  + **Выйти из группы**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **id_group** - айди группы
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + Invalid parameters
+    + Group not found
+    + Private group
+    + You are already in a group
+
+### 4. deleteGroup
+  + **Удалть группу**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **id_group** - айди группы
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + Invalid parameters
+    + Group not found
+    + Private group
+    + You are already in a group
+    + You have no right
 
 ### MessagesMethodsAPI
 
 ### 1. sendMessage
-  + **Отправить сообщение в группу**
+  + **Отправить сообщение в чат**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
-    + **id_group** - айди группы
-    + **text** - текст сообщение (2048 символов)
+    + **chat** - айди чата
+    + **text** - текст сообщения (2048 символов)
   + **Ответы:**
     ```
     {
-        "ok": true,
+        "ok": true, 
         "result": {
-            "_id": 1,
-            "date": "Wed, 03 Nov 2021 17:23:50 GMT",
-            "from_id": 1,
+            "_id": 4, 
+            "date": "Thu, 04 Nov 2021 23:42:18 GMT", 
+            "from_id": 1, 
             "text": "Привет"
         }
     }
@@ -184,25 +362,28 @@
   + **Ошибки:**
     + Session is not authorized
     + Session not found
-    + Group not found
+    + Chat not found
+    + Private group
     + You are not in this group
     + Invalid parameters
 
 ### 2. getMessages
-  + **Получить список сообщений группы**
+  + **Получить список сообщений чата**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
-    + **id_group** - айди группы
+    + **chat** - айди группы
+    + **offset** - смещение (0 по умолчанию)
+    + **limit** - лимит (100 по умолчанию)
   + **Ответы:**
     ```
     {
-        "ok": true,
+        "ok": true, 
         "result": [
             {
-                "_id": 1,
-                "date": "Wed, 03 Nov 2021 17:23:50 GMT",
-                "from_id": 1,
-                "text": "Привет"
+                "_id": 1, 
+                "date": "Thu, 04 Nov 2021 21:09:53 GMT", 
+                "from_id": 1, 
+                "text": "Сохраняй сюда сообщения друг)))"
             }
         ]
     }
@@ -210,5 +391,28 @@
   + **Ошибки:**
     + Session is not authorized
     + Session not found
-    + Group not found
+    + Chat not found
+    + Private group
     + You are not in this group
+    + Invalid parameters
+
+### 3. deleteMessage
+  + **Удалить сообщение в чате**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+    + **chat** - айди группы
+    + **id** - айди сообщения
+  + **Ответы:**
+    ```
+    {
+        "ok": true
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+    + Chat not found
+    + Private group
+    + You are not in this group
+    + Invalid parameters
+    + Message not found
