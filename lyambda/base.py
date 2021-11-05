@@ -38,9 +38,9 @@ class BaseMethodsAPI(abc.ABC):
             session.save()
             Utilities.emailt(args['email'], session.code, self.smtp)
 
-            return {'ok' : True}
+            return {'ok' : True}, 200
         except ValidationError:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid email'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid email'}, 400
 
     @required_args(['email', 'code'], types={'email' : str, 'code' : int})
     def signIn(self, **args):
