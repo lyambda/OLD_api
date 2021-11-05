@@ -1,18 +1,33 @@
 from email.policy import default
 from mongoengine import (
     Document,
-    EmbeddedDocument,
     SequenceField,
     IntField,
     StringField,
     BooleanField,
     ListField,
     EmailField,
-    EmbeddedDocumentListField,
     DateTimeField
 )
 
+from mongoengine.connection import get_db
+from pymongo import ReturnDocument
+
 import datetime
+
+class MinusSequenceField(SequenceField):
+    def generate(self):
+        sequence_name = self.get_sequence_name()
+        sequence_id = f"{sequence_name}.{self.name}"
+        collection = get_db(alias=self.db_alias)[self.collection_name]
+
+        counter = collection.find_one_and_update(
+            filter={"_id": sequence_id},
+            update={"$inc": {"next": -1}},
+            return_document=ReturnDocument.AFTER,
+            upsert=True,
+        )
+        return self.value_decorator(counter["next"])
 
 class Session(Document):
     id = SequenceField(collection_name='ids', sequence_name='sessions', primary_key=True)
@@ -40,20 +55,21 @@ class User(Document):
         'collection': 'users'
     }
 
-class Message(EmbeddedDocument):
+class Message(Document):
     id = SequenceField(collection_name='ids', sequence_name='messages', primary_key=True)
+    id_group = IntField(required=True)
     from_id = IntField(required=True)
     text = StringField(required=True, max_length=2048)
     date = DateTimeField(default=datetime.datetime.utcnow)
 
 class Group(Document):
-    id = SequenceField(collection_name='ids', sequence_name='groups', primary_key=True)
-    owner = IntField(required=True)
-    name = StringField(required=True, max_length=16)
+    id = MinusSequenceField(collection_name='ids', sequence_name='groups', primary_key=True)
+    admins = ListField(IntField(), required=True)
+    name = StringField(null=True, max_length=16)
     link = StringField(null=True, max_length=16)
     description = description = StringField(null=True, max_length=64)
-    messages = EmbeddedDocumentListField(Message)
-    participants = ListField(IntField(), default=[], required=True)
+    participants = ListField(IntField(), required=True)
+    is_private = BooleanField(default=False)
 
     meta = {
         'collection': 'groups'

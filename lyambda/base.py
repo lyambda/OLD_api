@@ -1,9 +1,7 @@
 import abc
 import random
 
-from .utils import (
-    generate_token
-)
+from .utils import Utilities
 
 from .decorators import (
     required_args,
@@ -12,7 +10,9 @@ from .decorators import (
 
 from .models import (
     Session,
-    User
+    User,
+    Group,
+    Message
 )
 
 from mongoengine import (
@@ -20,60 +20,29 @@ from mongoengine import (
     DoesNotExist
 )
 
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from jinja2 import Environment, FileSystemLoader
-import smtplib
 import datetime
-import os
 
 class BaseMethodsAPI(abc.ABC):
-    def _emailt(self, email, code):
-        env = Environment(loader=FileSystemLoader('%s/html/' % os.path.dirname(__file__)))
-        template = env.get_template('new.html')
-        output = template.render(data={'code' : code, 'mail' : email})
-
-        message = MIMEMultipart()
-
-        message['From'] = self.smtp['email']
-        message['To'] = email
-        message['Subject'] = "Lamda"
-
-        message.attach(MIMEText(output, 'html'))
-
-        server = smtplib.SMTP(f'{self.smtp["host"]}: {self.smtp["port"]}')
-        server.starttls()
-        server.login(self.smtp['email'], self.smtp['password'])
-        server.sendmail(message['From'], message['To'], message.as_string())
-        server.quit()
-
-    def _delete_not_auth_sesion(self, email):
-        try:
-            session = Session.objects.get(email=email, is_auth=False)
-            session.delete()
-        except DoesNotExist:
-            pass
-
-    @required_args(['email'])
+    @required_args(['email'], types={'email' : str})
     def sendCode(self, **args):
         try:
-            self._delete_not_auth_sesion(args['email'])
+            Utilities.delete_not_auth_sesion(args['email'])
 
             session = Session(
                 email=args['email'],
                 code=random.randint(100000, 999999),
-                token=generate_token(),
+                token=Utilities.generate_token(),
                 is_auth=False
             )
 
             session.save()
-            self._emailt(args['email'], session.code)
+            Utilities.emailt(args['email'], session.code, self.smtp)
 
             return {'ok' : True}
         except ValidationError:
             return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid email'}
 
-    @required_args(['email', 'code'])
+    @required_args(['email', 'code'], types={'email' : str, 'code' : int})
     def signIn(self, **args):
         try:
             session = Session.objects.get(email=args['email'], is_auth=False)
@@ -99,7 +68,7 @@ class BaseMethodsAPI(abc.ABC):
         except DoesNotExist:
             return {'ok' : True, 'is_auth' : False, 'description' : 'Register now', 'token' : session.token}
 
-    @required_args(['token', 'name'])
+    @required_args(['token', 'name'], types={'token' : str, 'name' : str})
     @check_token()
     def register(self, **args):
         session = Session.objects.get(token=args['token'])
@@ -118,18 +87,33 @@ class BaseMethodsAPI(abc.ABC):
             description=args.get('description'),
         )
 
+        favorites = Group(
+            name='Избранное',
+            admins=[user.id],
+            participants=[user.id],
+            is_private=True
+        )
+
+        message = Message(
+            id_group=favorites.id,
+            from_id=user.id,
+            text='Сохраняй сюда сообщения друг)))',
+        )
+
         session.is_auth = True
         session.id_user = user.id
 
         try:
             user.save()
+            favorites.save()
+            message.save()
             session.save()
         except ValidationError:
             return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}
 
         return {'ok' : True, 'description' : 'Are you registered'}
 
-    @required_args(['token'])
+    @required_args(['token'], types={'token' : str})
     @check_token(is_auth=True)
     def logOut(self, **args):
         Session.objects.get(token=args['token']).delete()
