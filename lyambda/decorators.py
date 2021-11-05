@@ -9,9 +9,9 @@ def required_args(req_args, types):
                     try:
                         types[arg](kwargs[arg])
                     except ValueError:
-                        return {'ok' : False, 'description' : 'Invalid parameters'}
+                        return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
                 else:
-                    return {'ok' : False, 'description' : 'Invalid parameters'}
+                    return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
 
             return func(self, *args, **kwargs)
 
@@ -26,9 +26,9 @@ def check_token(is_auth=False):
                 session = Session.objects.get(token=kwargs['token'])
 
                 if is_auth and not session.is_auth:
-                    return {'ok' : False, 'error_code' : 403, 'description' : 'Session is not authorized'}
+                    return {'ok' : False, 'error_code' : 403, 'description' : 'Session is not authorized'}, 403
             except DoesNotExist:
-                return {'ok' : False, 'error_code' : 404, 'description' : 'Session not found'}
+                return {'ok' : False, 'error_code' : 404, 'description' : 'Session not found'}, 404
 
             return func(self, *args, **kwargs)
 

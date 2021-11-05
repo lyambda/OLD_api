@@ -37,9 +37,9 @@ class GroupsMethodsAPI(abc.ABC):
             group.save()
             user.save()
         except ValidationError:
-            return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
 
-        return {'ok' : True, 'result' : group.to_mongo().to_dict()}
+        return {'ok' : True, 'result' : group.to_mongo().to_dict()}, 200
 
     @required_args(['token', 'id_group'], types={'token' : str, 'id_group' : int})
     @check_token(is_auth=True)
@@ -51,13 +51,13 @@ class GroupsMethodsAPI(abc.ABC):
         try:
             group = Group.objects.get(id=id_group)
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Group not found'}
+            return {'ok' : False, 'error_code' : 404, 'description' : 'Group not found'}, 404
 
         if group.is_private:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
 
         if id_user in group.participants:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are already in a group'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'You are already in a group'}, 403
 
         user.groups.append(id_group)
         group.participants.append(id_user)
@@ -65,7 +65,7 @@ class GroupsMethodsAPI(abc.ABC):
         user.save()
         group.save()
 
-        return {'ok' : True, 'result' : group.to_mongo().to_dict()}
+        return {'ok' : True, 'result' : group.to_mongo().to_dict()}, 200
 
     @required_args(['token', 'id_group'], types={'token' : str, 'id_group' : int})
     @check_token(is_auth=True)
@@ -77,13 +77,13 @@ class GroupsMethodsAPI(abc.ABC):
         try:
             group = Group.objects.get(id=id_group)
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Group not found'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'Group not found'}, 403
 
         if group.is_private:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
 
         if id_user not in group.participants:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not in a group'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not in a group'}, 400
 
         user.groups.remove(id_group)
         group.participants.remove(id_user)
@@ -91,7 +91,7 @@ class GroupsMethodsAPI(abc.ABC):
         user.save()
         group.save()
 
-        return {'ok' : True}
+        return {'ok' : True}, 200
 
     @required_args(['token', 'id_group'], types={'token' : str, 'id_group' : int})
     @check_token(is_auth=True)
@@ -102,20 +102,20 @@ class GroupsMethodsAPI(abc.ABC):
         try:
             group = Group.objects.get(id=id_group)
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Group not found'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'Group not found'}, 403
 
         if group.is_private:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
 
         if user.id not in group.participants:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not in a group'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not in a group'}, 400
 
         if group not in group.admins:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You have no right'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'You have no right'}, 403
 
         user.groups.remove(group.id)
         
         group.delete()
         user.save()
 
-        return {'ok' : True}
+        return {'ok' : True}, 200

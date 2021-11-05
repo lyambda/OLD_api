@@ -27,13 +27,13 @@ class MessagesMethodsAPI(abc.ABC):
         group = Utilities.get_group(chat, user.id, create_dialog=True)
 
         if group is None:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}
+            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}, 404
 
         if user.id not in group.participants:
             if group.is_private:
-                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
+                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
 
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}, 403
 
         if chat not in user.groups:
             user.groups.append(chat)
@@ -49,9 +49,9 @@ class MessagesMethodsAPI(abc.ABC):
             group.save()
             user.save()
         except ValidationError:
-            return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}
+            return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
 
-        return {'ok' : True, 'result' : Utilities.filter_message(message.to_mongo().to_dict())}
+        return {'ok' : True, 'result' : Utilities.filter_message(message.to_mongo().to_dict())}, 200
 
     @required_args(['token', 'chat'], types={'token' : str, 'chat' : int})
     @check_token(is_auth=True)
@@ -63,20 +63,20 @@ class MessagesMethodsAPI(abc.ABC):
         group = Utilities.get_group(chat, id_user)
 
         if group is None:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}
+            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}, 404
 
         if not Utilities.is_int(offset) or not Utilities.is_int(limit):
-            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
 
         if id_user not in group.participants:
             if group.is_private:
-                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
+                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
 
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}, 403
 
         messages = list(map(lambda x: Utilities.filter_message(x.to_mongo().to_dict()), Message.objects[int(offset):int(offset) + int(limit)](id_group=group.id)))
 
-        return {'ok' : True, 'result' : messages}
+        return {'ok' : True, 'result' : messages}, 200
 
     @required_args(['token', 'chat', 'id'], types={'token' : str, 'chat' : int, 'id' : int})
     @check_token(is_auth=True)
@@ -87,18 +87,18 @@ class MessagesMethodsAPI(abc.ABC):
         group = Utilities.get_group(chat, id_user)
 
         if group is None:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}
+            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}, 404
 
         if id_user not in group.participants:
             if group.is_private:
-                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}
+                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
 
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}
+            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}, 403
 
         try:
             message = Message.objects.get(id_group=group.id, from_id=id_user, id=id)
             message.delete()
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Message not found'}
+            return {'ok' : False, 'error_code' : 404, 'description' : 'Message not found'}, 404
 
-        return {'ok' : True}
+        return {'ok' : True}, 200

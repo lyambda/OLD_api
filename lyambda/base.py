@@ -47,15 +47,15 @@ class BaseMethodsAPI(abc.ABC):
         try:
             session = Session.objects.get(email=args['email'], is_auth=False)
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'No login required'}
+            return {'ok' : False, 'error_code' : 404, 'description' : 'No login required'}, 404
 
         time_wait = datetime.datetime.utcnow() - session.date
 
         if time_wait.seconds >= 60 * 5 or session.is_auth:
-            return {'ok' : False, 'error_code' : 410, 'description' : 'The waiting time has expired'}
+            return {'ok' : False, 'error_code' : 410, 'description' : 'The waiting time has expired'}, 410
 
         if str(session.code) != args['code']:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'Incorrect code'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Incorrect code'}, 400
 
         try:
             user = User.objects.get(email=session.email)
@@ -64,9 +64,9 @@ class BaseMethodsAPI(abc.ABC):
             session.id_user = user.id
             session.save()
 
-            return {'ok' : True, 'is_auth' : True, 'description' : 'You are logged in', 'token' : session.token}
+            return {'ok' : True, 'is_auth' : True, 'description' : 'You are logged in', 'token' : session.token}, 200
         except DoesNotExist:
-            return {'ok' : True, 'is_auth' : False, 'description' : 'Register now', 'token' : session.token}
+            return {'ok' : True, 'is_auth' : False, 'description' : 'Register now', 'token' : session.token}, 200
 
     @required_args(['token', 'name'], types={'token' : str, 'name' : str})
     @check_token()
@@ -75,10 +75,10 @@ class BaseMethodsAPI(abc.ABC):
         time_wait = datetime.datetime.utcnow() - session.date
 
         if session.is_auth:
-            return {'ok' : False, 'error_code' : 410, 'description' : 'You are already registered'}
+            return {'ok' : False, 'error_code' : 410, 'description' : 'You are already registered'}, 410
 
         if time_wait.seconds >= 60 * 5:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'The waiting time has expired'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'The waiting time has expired'}, 400
 
         user = User(
             email=session.email,
@@ -111,15 +111,15 @@ class BaseMethodsAPI(abc.ABC):
             message.save()
             session.save()
         except ValidationError:
-            return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}
+            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
 
-        return {'ok' : True, 'description' : 'Are you registered'}
+        return {'ok' : True, 'description' : 'Are you registered'}, 200
 
     @required_args(['token'], types={'token' : str})
     @check_token(is_auth=True)
     def logOut(self, **args):
         Session.objects.get(token=args['token']).delete()
 
-        return {'ok' : True}
+        return {'ok' : True}, 200
 
         
