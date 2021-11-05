@@ -107,7 +107,25 @@
     + Session is not authorized
     + Session not found
 
-### 2. editName
+### 2. getGroups
+  + **Группы**
+  + **Параметры:**
+    + **token** - токен сессии (32 символа)
+  + **Ответы:**
+    ```json
+    {
+        "ok": true,
+        "result": [
+            1,
+            -4
+        ]
+    }
+    ```
+  + **Ошибки:**
+    + Session is not authorized
+    + Session not found
+
+### 3. editName
   + **Редактировать имя**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -123,7 +141,7 @@
     + Session not found
     + Invalid parameters
 
-### 3. editSurname
+### 4. editSurname
   + **Редактировать фамилию**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -138,7 +156,7 @@
     + Session is not authorized
     + Session not found
 
-### 4. editDescription
+### 5. editDescription
   + **Редактировать описание**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -153,7 +171,7 @@
     + Session is not authorized
     + Session not found
 
-### 5. addContact
+### 6. addContact
   + **Добавить контакт**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -170,7 +188,7 @@
     + User not found
     + Contact has already been added
 
-### 6. deleteContact
+### 7. deleteContact
   + **Удалить контакт**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -186,7 +204,7 @@
     + Session not found
     + Contact not found
 
-### 7. getUser
+### 8. getUser
   + **Получить пользователя**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
@@ -208,7 +226,7 @@
     + Session not found
     + User not found
 
-### 8. getChat
+### 9. getChat
   + **Получить чат**
   + **Параметры:**
     + **token** - токен сессии (32 символа)
