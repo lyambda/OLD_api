@@ -1,7 +1,7 @@
 import abc
 
 from .decorators import (
-    required_args,
+    check_args,
     check_token
 )
 
@@ -16,18 +16,20 @@ from mongoengine import (
     DoesNotExist
 )
 
+from .utils import Utilities
+
 class GroupsMethodsAPI(abc.ABC):
-    @required_args(['token', 'name'], types={'token' : str, 'name' : str})
+    @check_args(['token', 'name'], ['description', 'link'], {'token' : str, 'name' : str, 'description' : str, 'link' : str})
     @check_token(is_auth=True)
-    def createGroup(self, **args):
-        id_user = Session.objects.get(token=args['token']).id_user
+    def createGroup(self, token, name,  description=None, link=None):
+        id_user = Session.objects.get(token=token).id_user
         user = User.objects.get(id=id_user)
 
         group = Group(
-            name=args['name'],
+            name=name,
             admins=[id_user],
-            link=args.get('username'),
-            description=args.get('description'),
+            link=link,
+            description=description,
             participants=[id_user]
         )
 
@@ -37,27 +39,28 @@ class GroupsMethodsAPI(abc.ABC):
             group.save()
             user.save()
         except ValidationError:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
+            return Utilities.make_reponse(400, 'Invalid parameters')
 
-        return {'ok' : True, 'result' : group.to_mongo().to_dict()}, 200
+        return Utilities.make_reponse(200, **{
+            'result' : group.to_mongo().to_dict()
+        })
 
-    @required_args(['token', 'id_group'], types={'token' : str, 'id_group' : int})
+    @check_args(['token', 'id_group'], [], {'token' : str, 'id_group' : int})
     @check_token(is_auth=True)
-    def joinGroup(self, **args):
-        id_user = Session.objects.get(token=args['token']).id_user
-        id_group = int(args['id_group'])
+    def joinGroup(self, token, id_group):
+        id_user = Session.objects.get(token=token).id_user
         user = User.objects.get(id=id_user)
 
         try:
             group = Group.objects.get(id=id_group)
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Group not found'}, 404
+            return Utilities.make_reponse(404, 'Group not found')
 
         if group.is_private:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
+            return Utilities.make_reponse(403, 'Private group')
 
         if id_user in group.participants:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are already in a group'}, 403
+            return Utilities.make_reponse(403, 'You are already in a group')
 
         user.groups.append(id_group)
         group.participants.append(id_user)
@@ -65,57 +68,57 @@ class GroupsMethodsAPI(abc.ABC):
         user.save()
         group.save()
 
-        return {'ok' : True, 'result' : group.to_mongo().to_dict()}, 200
+        return Utilities.make_reponse(200, **{
+            'result' : group.to_mongo().to_dict()
+        })
 
-    @required_args(['token', 'id_group'], types={'token' : str, 'id_group' : int})
+    @check_args(['token', 'id_group'], [], {'token' : str, 'id_group' : int})
     @check_token(is_auth=True)
-    def leaveGroup(self, **args):
-        id_group = int(args['id_group'])
-        id_user = Session.objects.get(token=args['token']).id_user
+    def leaveGroup(self, token, id_group):
+        id_user = Session.objects.get(token=token).id_user
         user = User.objects.get(id=id_user)
 
         try:
             group = Group.objects.get(id=id_group)
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Group not found'}, 403
+            return Utilities.make_reponse(404, 'Group not found')
 
         if group.is_private:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
+            return Utilities.make_reponse(403, 'Private group')
 
         if id_user not in group.participants:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not in a group'}, 400
+            return Utilities.make_reponse(403, 'You are already in a group')
 
         user.groups.remove(id_group)
         group.participants.remove(id_user)
 
         user.save()
         group.save()
+        
+        return Utilities.make_reponse(200)
 
-        return {'ok' : True}, 200
-
-    @required_args(['token', 'id_group'], types={'token' : str, 'id_group' : int})
+    @check_args(['token', 'id_group'], [], {'token' : str, 'id_group' : int})
     @check_token(is_auth=True)
-    def deleteGroup(self, **args):
-        id_group = int(args['id_group'])
-        user = User.objects.get(id=Session.objects.get(token=args['token']).id_user)
+    def deleteGroup(self, token, id_group):
+        user = User.objects.get(id=Session.objects.get(token=token).id_user)
 
         try:
             group = Group.objects.get(id=id_group)
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Group not found'}, 403
+            return Utilities.make_reponse(404, 'Group not found')
 
         if group.is_private:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
+            return Utilities.make_reponse(403, 'Private group')
 
         if user.id not in group.participants:
-            return {'ok' : False, 'error_code' : 400, 'description' : 'You are not in a group'}, 400
+            return Utilities.make_reponse(403, 'You are already in a group')
 
         if group not in group.admins:
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You have no right'}, 403
+            return Utilities.make_reponse(403, 'You have no right')
 
         user.groups.remove(group.id)
         
         group.delete()
         user.save()
 
-        return {'ok' : True}, 200
+        return Utilities.make_reponse(200)

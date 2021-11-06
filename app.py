@@ -1,6 +1,7 @@
-from flask import Flask, request, jsonify, abort
-from lyambda import API
+from flask import Flask, request, Response, abort
 from config import Config
+from lyambda import API
+from lyambda.utils import Utilities
 import os
 
 app = Flask(__name__)
@@ -13,25 +14,31 @@ api = API(
 
 @app.route('/<method>', methods=['POST'])
 def methods(method):
-    if method not in api.methods.keys():
+    data = request.get_json()
+
+    if data is None:
+        abort(400)
+    elif method not in api.methods.keys():
         abort(404)
     else:
-        data, code =  api.methods[method](**request.form.to_dict())
+        return Response(*api.methods[method](**data), {'Content-Type': 'application/json'})
 
-    return jsonify(data), code, {'Content-Type': 'application/json'}
+@app.errorhandler(400)
+def bad_request(e):
+    return Response(*Utilities.make_reponse(400, 'Bad request'), {'Content-Type': 'application/json'})
 
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({'ok' : False, 'error_code' : 404, 'description' : 'Method not found'}), 404
+    return Response(*Utilities.make_reponse(404, 'Method not found'), {'Content-Type': 'application/json'})
 
 @app.errorhandler(405)
 def method_not_allowed(e):
-    return jsonify({'ok' : False, 'error_code' : 405, 'description' : 'Method Not Allowed'}), 405
+    return Response(*Utilities.make_reponse(405, 'Method Not Allowed'), {'Content-Type': 'application/json'})
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    return jsonify({'ok' : False, 'error_code' : 500, 'description' : 'Internal server error'}), 500, {'Content-Type': 'application/json'}
-
+    return Response(*Utilities.make_reponse(500, 'Internal server error'), {'Content-Type': 'application/json'})
+    
 if __name__ == '__main__':
     app.run(
         host=Config['server']['host'],

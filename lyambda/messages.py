@@ -1,7 +1,7 @@
 import abc
 
 from .decorators import (
-    required_args,
+    check_args,
     check_token
 )
 
@@ -19,21 +19,20 @@ from mongoengine import (
 from .utils import Utilities
 
 class MessagesMethodsAPI(abc.ABC):
-    @required_args(['token', 'chat', 'text'], types={'token' : str, 'chat' : int, 'text' : str})
+    @check_args(['token', 'chat', 'text'], [], {'token' : str, 'chat' : int, 'text' : str})
     @check_token(is_auth=True)
-    def sendMessage(self, **args):
-        chat = int(args['chat'])
-        user = User.objects.get(id=Session.objects.get(token=args['token']).id_user)
+    def sendMessage(self, token, chat, text):
+        user = User.objects.get(id=Session.objects.get(token=token).id_user)
         group = Utilities.get_group(chat, user.id, create_dialog=True)
 
         if group is None:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}, 404
+            return Utilities.make_reponse(404, 'Chat not found')
 
         if user.id not in group.participants:
             if group.is_private:
-                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
+                return Utilities.make_reponse(403, 'Private group')
 
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}, 403
+            return Utilities.make_reponse(403, 'You are not in this group')
 
         if chat not in user.groups:
             user.groups.append(chat)
@@ -41,7 +40,7 @@ class MessagesMethodsAPI(abc.ABC):
         message = Message(
             id_group=group.id,
             from_id=user.id,
-            text=args['text']
+            text=text
         )
 
         try:
@@ -49,56 +48,52 @@ class MessagesMethodsAPI(abc.ABC):
             group.save()
             user.save()
         except ValidationError:
-            return {'ok' : True, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
+            return Utilities.make_reponse(400, 'Invalid parameters')
 
-        return {'ok' : True, 'result' : Utilities.filter_message(message.to_mongo().to_dict())}, 200
+        return Utilities.make_reponse(200, **{
+            'result' : Utilities.filter_message(message.to_mongo().to_dict())
+        })
 
-    @required_args(['token', 'chat'], types={'token' : str, 'chat' : int})
+    @check_args(['token', 'chat'], ['offset', 'limit'], {'token' : str, 'chat' : int, 'offset' : int, 'limit' : int})
     @check_token(is_auth=True)
-    def getMessages(self, **args):
-        chat = int(args['chat'])
-        offset = args.get('offset', '0')
-        limit = args.get('limit', '100')
-        id_user = Session.objects.get(token=args['token']).id_user
+    def getMessages(self, token, chat, offset=0, limit=100):
+        id_user = Session.objects.get(token=token).id_user
         group = Utilities.get_group(chat, id_user)
 
         if group is None:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}, 404
-
-        if not Utilities.is_int(offset) or not Utilities.is_int(limit):
-            return {'ok' : False, 'error_code' : 400, 'description' : 'Invalid parameters'}, 400
+            return Utilities.make_reponse(404, 'Chat not found')
 
         if id_user not in group.participants:
             if group.is_private:
-                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
+                return Utilities.make_reponse(403, 'Private group')
 
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}, 403
+            return Utilities.make_reponse(403, 'You are not in this group')
 
-        messages = list(map(lambda x: Utilities.filter_message(x.to_mongo().to_dict()), Message.objects[int(offset):int(offset) + int(limit)](id_group=group.id)))
+        messages = list(map(lambda x: Utilities.filter_message(x.to_mongo().to_dict()), Message.objects[offset:offset + limit](id_group=group.id)))
+        
+        return Utilities.make_reponse(200, **{
+            'result' : messages
+        })
 
-        return {'ok' : True, 'result' : messages}, 200
-
-    @required_args(['token', 'chat', 'id'], types={'token' : str, 'chat' : int, 'id' : int})
+    @check_args(['token', 'chat', 'id'], [], {'token' : str, 'chat' : int, 'id' : int})
     @check_token(is_auth=True)
-    def deleteMessage(self, **args):
-        chat = int(args['chat'])
-        id = int(args['id'])
-        id_user = Session.objects.get(token=args['token']).id_user
+    def deleteMessage(self, token, chat, id):
+        id_user = Session.objects.get(token=token).id_user
         group = Utilities.get_group(chat, id_user)
 
         if group is None:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Chat not found'}, 404
+            return Utilities.make_reponse(404, 'Chat not found')
 
         if id_user not in group.participants:
             if group.is_private:
-                return {'ok' : False, 'error_code' : 403, 'description' : 'Private group'}, 403
+                return Utilities.make_reponse(403, 'Private group')
 
-            return {'ok' : False, 'error_code' : 403, 'description' : 'You are not in this group'}, 403
+            return Utilities.make_reponse(403, 'You are not in this group')
 
         try:
             message = Message.objects.get(id_group=group.id, from_id=id_user, id=id)
             message.delete()
         except DoesNotExist:
-            return {'ok' : False, 'error_code' : 404, 'description' : 'Message not found'}, 404
+            return Utilities.make_reponse(404, 'Message not found')
 
-        return {'ok' : True}, 200
+        return Utilities.make_reponse(200)

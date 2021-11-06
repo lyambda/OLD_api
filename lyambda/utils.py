@@ -17,6 +17,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from jinja2 import Environment, FileSystemLoader
 import smtplib
+import json
 import os
 
 class Utilities:
@@ -100,3 +101,18 @@ class Utilities:
             return True
         except ValueError:
             return False
+
+    @staticmethod
+    def make_reponse(code, description=None, **data):
+        reponse_content = {**data}
+
+        if description is not None:
+            reponse_content['description'] = description
+
+        if code != 200:
+            reponse_content['error_code'] = code
+            reponse_content['ok'] = False
+        else:
+            reponse_content['ok'] = True
+
+        return json.dumps(reponse_content), code

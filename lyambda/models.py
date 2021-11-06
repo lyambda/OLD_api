@@ -66,7 +66,7 @@ class Group(Document):
     id = MinusSequenceField(collection_name='ids', sequence_name='groups', primary_key=True)
     admins = ListField(IntField(), required=True)
     name = StringField(null=True, max_length=16)
-    link = StringField(null=True, max_length=16)
+    link = StringField(null=True, max_length=16, unique=True)
     description = description = StringField(null=True, max_length=64)
     participants = ListField(IntField(), required=True)
     is_private = BooleanField(default=False)
